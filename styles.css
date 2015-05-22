@@ -13,3 +13,7 @@ Feel free to use it if you like. */
   fill: green;
   border-color:black;
 }
+
+svg{
+  border: 5px solid black;
+}
