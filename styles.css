@@ -4,7 +4,12 @@
 Feel free to use it if you like. */
 
 
-.enemy{
-  border-color:black;
+.player{
+  fill: red;
+  border-color: black;
+}
 
+.enemy{
+  fill: green;
+  border-color:black;
 }
