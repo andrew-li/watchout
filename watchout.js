@@ -10,7 +10,8 @@ gameOptions = {
 
 gameStats = {
   score: 0,
-  bestScore: 0
+  bestScore: 0,
+  collisionCounter: 0
 };
 
 var Player = function(x, y, r) {
@@ -34,8 +35,6 @@ d3.select('svg')
 var players = [];
 var enemies = [];
 
-var collisionCounter = 0;
-
 // Create player
 var createPlayer = function() {
   var player = new Player(500, 350, 15);
@@ -55,7 +54,6 @@ var createPlayer = function() {
 
 // Make draggable
 var dragMove = function() {
-// console.log(players);
 
   d3.select(this)
   .attr('cx', function(d){
@@ -128,9 +126,6 @@ var moveEnemies = function(){
   }
 };
 
-
-
-
 var tweenWithCollisionDetection = function(endData) { //endData = each enemy instance.
 
   var checkCollision = function(enemy, collidedCallback) {
@@ -147,7 +142,6 @@ var tweenWithCollisionDetection = function(endData) { //endData = each enemy ins
         collidedCallback(player, enemy);
     }
   };
-
 
   var onCollision = function() {
     console.log("collision!");
@@ -176,9 +170,8 @@ var tweenWithCollisionDetection = function(endData) { //endData = each enemy ins
   };
 };
 
-//call the functions
+//helper functions
 
-createPlayer();
 var throttle = function(func, wait) {
     var block = false; //a flag that indicates whether the passed in function should be called or not
     var result; //a variable that holds the most recently returned result from the execution of the passed in function
@@ -200,15 +193,13 @@ var throttle = function(func, wait) {
 
       return result;
     };
-  };
+};
 
 var increment = function(){
-  collisionCounter++;
+  gameStats.collisionCounter++;
 };
 
 var incr = throttle(increment,2000);
-var currentTime = 0;
-var highTime = 0;
 
 var startGame = function(){
     //reset game
@@ -216,26 +207,31 @@ var startGame = function(){
     d3.select('svg').selectAll('image.enemy').remove();
     incr();
     //update the collision counter
-    d3.select('.collisions').select('span').text(collisionCounter);
+    d3.select('.collisions').select('span').text(gameStats.collisionCounter);
 
     //if current score > high score
-    if(currentTime > highTime){
+    if(gameStats.score > gameStats.bestScore){
       //set high score
-      highTime = currentTime;
+      gameStats.bestScore = gameStats.score;
     }
     //reset current score to 0
-    currentTime = 0;
+    gameStats.score = 0;
 
   createEnemies(gameOptions.nEnemies);
 
 };
 
-startGame();
 var currentTimer = function(){
-      currentTime++;
-      d3.select('.current').select('span').text(currentTime);
-      d3.select('.high').select('span').text(highTime);
+      gameStats.score++;
+      d3.select('.current').select('span').text(gameStats.score);
+      d3.select('.high').select('span').text(gameStats.bestScore);
 };
-setInterval(currentTimer,1000);
-d3.timer(moveEnemies(), interval);
+
+//call the functions
+
+createPlayer(); //create the players
+startGame(); //start the game
+
+setInterval(currentTimer,1000); //continually updates the score
+d3.timer(moveEnemies(), interval); //continually updates the enemy position
 
