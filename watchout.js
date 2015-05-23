@@ -1,23 +1,17 @@
 // start slingin' some d3 here.
-//
 
 gameOptions = {
-  height: 1000,
-  width: 1200,
-  nEnemies: 3,
-  padding: 20
+  height: 600,
+  width: 800,
+  nEnemies: 40,
+  padding: 20,
+  bounds: 1.05
 };
 
 gameStats = {
   score: 0,
   bestScore: 0
 };
-
-var axes = {
-  x: d3.scale.linear().domain([0, 100]).range([0, gameOptions.width]),
-  y: d3.scale.linear().domain([0, 100]).range([0, gameOptions.height])
-};
-
 
 var Player = function(x, y, r) {
   this.x = x;
@@ -65,12 +59,26 @@ var dragMove = function() {
 
   d3.select(this)
   .attr('cx', function(d){
-   d.x = d3.event.x;
-   return d3.event.x;
+     if(d3.event.x >= gameOptions.width - d.r){
+      d.x = gameOptions.width - d.r;
+     }
+     else if(d3.event.x <= d.r){
+      d.x = d.r;
+     }else{
+      d.x = d3.event.x;
+     }
+     return d.x;
   })
   .attr('cy', function(d){
-    d.y = d3.event.y;
-    return d3.event.y;
+     if(d3.event.y >= gameOptions.height - d.r){
+      d.y = gameOptions.height - d.r;
+     }
+     else if(d3.event.y <= d.r){
+      d.y = d.r;
+     }else{
+      d.y = d3.event.y;
+     }
+     return d.y;
   });
 };
 
@@ -80,17 +88,20 @@ var drag = d3.behavior.drag().on('drag', dragMove);
 // Create enemies
 var createEnemies = function(numEnemies) {
   for(var i = 0; i < numEnemies; i++) {
-    var enemy = new Enemy(Math.random() * 1000 + 50, Math.random() * 700 + 50, 15);
+    var enemy = new Enemy(Math.random() * gameOptions.width/gameOptions.bounds + 10, Math.random() * gameOptions.height/gameOptions.bounds, 15);
     enemies.push(enemy);
   }
 
-  d3.select('svg').selectAll('circle.enemy')
+  d3.select('svg').selectAll('image.enemy')
   .data(enemies)
   .enter()
-  .append('circle')
-  .attr('cx',function(d){return d.x;})
-  .attr('cy',function(d){return d.y;})
+  .append('svg:image')
+  .attr('x',function(d){return d.x;})
+  .attr('y',function(d){return d.y;})
   .attr('r',function(d){return d.r;})
+  .attr('width',function(d){return 2 * d.r;})
+  .attr('height',function(d){return 2 * d.r;})
+  .attr('xlink:href',"shuriken.png")
   .attr('class','enemy');
 };
 
@@ -100,13 +111,13 @@ var moveEnemies = function(){
   return function(){
     d3.select('svg').selectAll('.enemy')
     .transition().duration(1500)
-    .attr('cx',function(d){
-      var rand = Math.random() * 1000 + 50;
+    .attr('x',function(d){
+      var rand = Math.random() * gameOptions.width/gameOptions.bounds + 10;
       d.x = rand;
       return rand;
     })
-    .attr('cy',function(d){
-      var rand = Math.random() * 700 + 50;
+    .attr('y',function(d){
+      var rand = Math.random() * gameOptions.height/gameOptions.bounds;
       d.y = rand;
       return rand;
     })
@@ -122,21 +133,14 @@ var moveEnemies = function(){
 
 var tweenWithCollisionDetection = function(endData) { //endData = each enemy instance.
 
-// console.log("starting");
-// console.log(d3.select(this).attr('cx'));
-// console.log(d3.select(this).attr('cy'));
-
-// console.log("ending");
-// console.log(endData);
-//
   var checkCollision = function(enemy, collidedCallback) {
     var player;
     for(var i = 0; i < players.length; i++) {
       player = players[i];
 
       var radiusSum =  parseFloat(enemy.attr('r')) + player.r;
-      var xDiff = parseFloat(enemy.attr('cx')) - player.x;
-      var yDiff = parseFloat(enemy.attr('cy')) - player.y;
+      var xDiff = parseFloat(enemy.attr('x')) - player.x;
+      var yDiff = parseFloat(enemy.attr('y')) - player.y;
 
       var separation = Math.sqrt( Math.pow(xDiff, 2) + Math.pow(yDiff, 2) );
       if(separation < radiusSum) // if touching
@@ -154,12 +158,10 @@ var tweenWithCollisionDetection = function(endData) { //endData = each enemy ins
   var endPos, enemy, startPos;
   enemy = d3.select(this); // starting pos - returns d3 node.
   startPos = {
-    x: parseFloat(enemy.attr('cx')),
-    y: parseFloat(enemy.attr('cy'))
+    x: parseFloat(enemy.attr('x')),
+    y: parseFloat(enemy.attr('y'))
   };
   endPos = {
-    //x: axes.x(endData.x),
-    //y: axes.y(endData.y)
     x: (endData.x),
     y: (endData.y)
   };
@@ -170,7 +172,7 @@ var tweenWithCollisionDetection = function(endData) { //endData = each enemy ins
       x: startPos.x + (endPos.x - startPos.x) * t,
       y: startPos.y + (endPos.y - startPos.y) * t
     };
-    return enemy.attr('cx', enemyNextPos.x).attr('cy', enemyNextPos.y);
+    return enemy.attr('x', enemyNextPos.x).attr('y', enemyNextPos.y);
   };
 };
 
@@ -211,8 +213,7 @@ var highTime = 0;
 var startGame = function(){
     //reset game
     enemies = [];
-    d3.select('svg').selectAll('circle.enemy').remove();
-    createEnemies(gameOptions.nEnemies);
+    d3.select('svg').selectAll('image.enemy').remove();
     incr();
     //update the collision counter
     d3.select('.collisions').select('span').text(collisionCounter);
