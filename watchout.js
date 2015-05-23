@@ -40,6 +40,8 @@ d3.select('svg')
 var players = [];
 var enemies = [];
 
+var collisionCounter = 0;
+
 // Create player
 var createPlayer = function() {
   var player = new Player(500, 350, 15);
@@ -90,7 +92,6 @@ var createEnemies = function(numEnemies) {
   .attr('cy',function(d){return d.y;})
   .attr('r',function(d){return d.r;})
   .attr('class','enemy');
-
 };
 
 // Move enemies every set interval
@@ -118,20 +119,6 @@ var moveEnemies = function(){
 
 
 
-var checkCollision = function(enemy, collidedCallback) {
-  var player;
-  for(var i = 0; i < players.length; i++) {
-    player = players[i];
-
-    var radiusSum =  parseFloat(enemy.attr('r')) + player.r;
-    var xDiff = parseFloat(enemy.attr('cx')) - player.x;
-    var yDiff = parseFloat(enemy.attr('cy')) - player.y;
-
-    var separation = Math.sqrt( Math.pow(xDiff, 2) + Math.pow(yDiff, 2) );
-    if(separation < radiusSum) // if touching
-      collidedCallback(player, enemy);
-  }
-};
 
 var tweenWithCollisionDetection = function(endData) { //endData = each enemy instance.
 
@@ -141,9 +128,27 @@ var tweenWithCollisionDetection = function(endData) { //endData = each enemy ins
 
 // console.log("ending");
 // console.log(endData);
+//
+  var checkCollision = function(enemy, collidedCallback) {
+    var player;
+    for(var i = 0; i < players.length; i++) {
+      player = players[i];
+
+      var radiusSum =  parseFloat(enemy.attr('r')) + player.r;
+      var xDiff = parseFloat(enemy.attr('cx')) - player.x;
+      var yDiff = parseFloat(enemy.attr('cy')) - player.y;
+
+      var separation = Math.sqrt( Math.pow(xDiff, 2) + Math.pow(yDiff, 2) );
+      if(separation < radiusSum) // if touching
+        collidedCallback(player, enemy);
+    }
+  };
+
 
   var onCollision = function() {
     console.log("collision!");
+    startGame();
+
   };
 
   var endPos, enemy, startPos;
@@ -172,7 +177,64 @@ var tweenWithCollisionDetection = function(endData) { //endData = each enemy ins
 //call the functions
 
 createPlayer();
+var throttle = function(func, wait) {
+    var block = false; //a flag that indicates whether the passed in function should be called or not
+    var result; //a variable that holds the most recently returned result from the execution of the passed in function
 
-createEnemies(gameOptions.nEnemies);
+    //this returned function will execute the passed in function and block future attempts to call it until the block flag is set back to false
+    //the block flag will be set back to false after the wait time finishes
+    //the function will return the most recently returned result from the execution of the passed in function even while block is true
+    return function() {
+      if(block !== true) //don't do anything if block is set to true
+      {
+        block = true; //prevent the function from getting called again
+        result = func.apply(this, arguments); //execute the function and update result variable
 
+        //run a function to unblock after the wait time finishes
+        setTimeout(function() {
+          block = false; //allow the function to be called again
+        }, wait);
+      }
+
+      return result;
+    };
+  };
+
+var increment = function(){
+  collisionCounter++;
+};
+
+var incr = throttle(increment,2000);
+var currentTime = 0;
+var highTime = 0;
+
+var startGame = function(){
+    //reset game
+    enemies = [];
+    d3.select('svg').selectAll('circle.enemy').remove();
+    createEnemies(gameOptions.nEnemies);
+    incr();
+    //update the collision counter
+    d3.select('.collisions').select('span').text(collisionCounter);
+
+    //if current score > high score
+    if(currentTime > highTime){
+      //set high score
+      highTime = currentTime;
+    }
+    //reset current score to 0
+    currentTime = 0;
+
+  createEnemies(gameOptions.nEnemies);
+
+};
+
+startGame();
+var currentTimer = function(){
+      currentTime++;
+      d3.select('.current').select('span').text(currentTime);
+      d3.select('.high').select('span').text(highTime);
+};
+setInterval(currentTimer,1000);
 d3.timer(moveEnemies(), interval);
+
