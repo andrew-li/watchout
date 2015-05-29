@@ -1,177 +1,6 @@
-// start slingin' some d3 here.
-
-gameOptions = {
-  height: 600,
-  width: 800,
-  nEnemies: 40,
-  padding: 20,
-  bounds: 1.05
-};
-
-gameStats = {
-  score: 0,
-  bestScore: 0,
-  collisionCounter: 0
-};
-
-var Player = function(x, y, r) {
-  this.x = x;
-  this.y = y;
-  this.r = r;
-};
-
-var Enemy = function(x, y, r) {
-  this.x = x;
-  this.y = y;
-  this.r = r;
-};
-
-d3.select('svg')
-.attr('width', gameOptions.width)
-.attr('height', gameOptions.height)
-.attr('padding', gameOptions.padding)
-;
-
-var players = [];
-var enemies = [];
-
-// Create player
-var createPlayer = function() {
-  var player = new Player(500, 350, 15);
-
-  players.push(player);
-
-  d3.select('svg').selectAll('circle')
-  .data(players)
-  .enter()
-  .append('circle')
-  .attr('cx',function(d){return d.x;})
-  .attr('cy',function(d){return d.y;})
-  .attr('r',function(d){return d.r;})
-  .attr('class','player')
-  .call(drag);
-};
-
-// Make draggable
-var dragMove = function() {
-
-  d3.select(this)
-  .attr('cx', function(d){
-     if(d3.event.x >= gameOptions.width - d.r){
-      d.x = gameOptions.width - d.r;
-     }
-     else if(d3.event.x <= d.r){
-      d.x = d.r;
-     }else{
-      d.x = d3.event.x;
-     }
-     return d.x;
-  })
-  .attr('cy', function(d){
-     if(d3.event.y >= gameOptions.height - d.r){
-      d.y = gameOptions.height - d.r;
-     }
-     else if(d3.event.y <= d.r){
-      d.y = d.r;
-     }else{
-      d.y = d3.event.y;
-     }
-     return d.y;
-  });
-};
-
-var drag = d3.behavior.drag().on('drag', dragMove);
-
-
-// Create enemies
-var createEnemies = function(numEnemies) {
-  for(var i = 0; i < numEnemies; i++) {
-    var enemy = new Enemy(Math.random() * gameOptions.width/gameOptions.bounds + 10, Math.random() * gameOptions.height/gameOptions.bounds, 15);
-    enemies.push(enemy);
-  }
-
-  d3.select('svg').selectAll('image.enemy')
-  .data(enemies)
-  .enter()
-  .append('svg:image')
-  .attr('x',function(d){return d.x;})
-  .attr('y',function(d){return d.y;})
-  .attr('r',function(d){return d.r;})
-  .attr('width',function(d){return 2 * d.r;})
-  .attr('height',function(d){return 2 * d.r;})
-  .attr('xlink:href',"shuriken.png")
-  .attr('class','enemy');
-};
-
-// Move enemies every set interval
-var interval = 1500;
-var moveEnemies = function(){
-  return function(){
-    d3.select('svg').selectAll('.enemy')
-    .transition().duration(1500)
-    .attr('x',function(d){
-      var rand = Math.random() * gameOptions.width/gameOptions.bounds + 10;
-      d.x = rand;
-      return rand;
-    })
-    .attr('y',function(d){
-      var rand = Math.random() * gameOptions.height/gameOptions.bounds;
-      d.y = rand;
-      return rand;
-    })
-    .tween('custom', tweenWithCollisionDetection);
-
-    d3.timer(moveEnemies(), interval);
-    return true;
-  }
-};
-
-var tweenWithCollisionDetection = function(endData) { //endData = each enemy instance.
-
-  var checkCollision = function(enemy, collidedCallback) {
-    var player;
-    for(var i = 0; i < players.length; i++) {
-      player = players[i];
-
-      var radiusSum =  parseFloat(enemy.attr('r')) + player.r;
-      var xDiff = parseFloat(enemy.attr('x')) - player.x;
-      var yDiff = parseFloat(enemy.attr('y')) - player.y;
-
-      var separation = Math.sqrt( Math.pow(xDiff, 2) + Math.pow(yDiff, 2) );
-      if(separation < radiusSum) // if touching
-        collidedCallback(player, enemy);
-    }
-  };
-
-  var onCollision = function() {
-    console.log("collision!");
-    startGame();
-
-  };
-
-  var endPos, enemy, startPos;
-  enemy = d3.select(this); // starting pos - returns d3 node.
-  startPos = {
-    x: parseFloat(enemy.attr('x')),
-    y: parseFloat(enemy.attr('y'))
-  };
-  endPos = {
-    x: (endData.x),
-    y: (endData.y)
-  };
-  return function(t) {
-    var enemyNextPos;
-    checkCollision(enemy, onCollision);
-    enemyNextPos = {
-      x: startPos.x + (endPos.x - startPos.x) * t,
-      y: startPos.y + (endPos.y - startPos.y) * t
-    };
-    return enemy.attr('x', enemyNextPos.x).attr('y', enemyNextPos.y);
-  };
-};
-
 //helper functions
 
+//function that prevents the passed in function from being invoked again within the given time period
 var throttle = function(func, wait) {
     var block = false; //a flag that indicates whether the passed in function should be called or not
     var result; //a variable that holds the most recently returned result from the execution of the passed in function
@@ -195,43 +24,195 @@ var throttle = function(func, wait) {
     };
 };
 
-var increment = function(){
-  gameStats.collisionCounter++;
+//function that increments the collision counter and temporarily changes the background color after a collision
+var incrementCollisions = function(context){
+  
+  //temporarily change the background color after a collision 
+  d3.select('svg').style('background-color', 'yellow');
+  setTimeout(function() {
+    d3.select('svg').style('background-color', 'white')
+  }, 2000);
+
+  //increment the collision counter
+  context.gameStats.collisionCounter++;
+
+  //update the collision counter
+  d3.select('.collisions').select('span').text(context.gameStats.collisionCounter);
 };
 
-var incr = throttle(increment,2000);
+//set a two second grace period on the collision function after a collision
+var incrementCollisionsThrottled = throttle(incrementCollisions, 2000);
 
-var startGame = function(){
-    //reset game
-    enemies = [];
-    d3.select('svg').selectAll('image.enemy').remove();
-    incr();
-    //update the collision counter
-    d3.select('.collisions').select('span').text(gameStats.collisionCounter);
+//function that updates the highest score and resets the current score to zero after a collision
+var updateScore = function(context) {
+  //keep track of the best score
+  if(context.gameStats.score > context.gameStats.bestScore)
+    context.gameStats.bestScore = context.gameStats.score;
 
-    //if current score > high score
-    if(gameStats.score > gameStats.bestScore){
-      //set high score
-      gameStats.bestScore = gameStats.score;
+  //reset current score and update the start time variable that helps calculate the current score
+  context.gameStats.score = 0;
+  context.startTime = context.currentTime;
+
+  //update the scores on the screen
+  d3.select('.current').select('span').text(context.gameStats.score);
+  d3.select('.high').select('span').text(context.gameStats.bestScore);
+};
+
+
+//Watchout class
+
+var Watchout = function() {
+
+  CoolCollisionSystem.call(this);
+
+  this.start();
+
+  //capture the start time to help calculate the current score
+  this.startTime = this.currentTime;
+
+};  
+
+Watchout.prototype = Object.create(CoolCollisionSystem.prototype);
+
+Watchout.prototype.constructor = Watchout;
+
+//function that starts the game
+Watchout.prototype.start = function() {
+
+  //set the game options
+  this.gameOptions = {
+    height: 600,
+    width: 800,
+    numEnemies: 15,
+    padding: 20,
+    bounds: 1.05
+  };
+
+  //set the game stats
+  this.gameStats = {
+    score: 0,
+    bestScore: 0,
+    collisionCounter: -1
+  };
+
+  //arrays to hold players and enemies (circles)
+  this.players = [];
+  this.circles = [];
+
+  //create the stage
+  d3.select('svg')
+  .attr('width', this.gameOptions.width)
+  .attr('height', this.gameOptions.height)
+  .attr('padding', this.gameOptions.padding)
+  ;
+
+  this.canvas = {};
+  this.canvas["width"] = this.gameOptions.width;
+  this.canvas["height"] = this.gameOptions.height;
+
+  //start the fps counter
+  this.fpsCounter = new FpsCounter().start();
+
+  //start the game
+  this.loadResources();
+  this.warmUp();
+  this.loop();
+};
+
+//function that creates the players and enemies
+Watchout.prototype.loadResources = function() {
+
+  this.players = createPlayer(this.gameOptions); //create the player
+
+  this.circles = createEnemies(this.gameOptions); //create the enemies
+
+};
+
+//function that draws the enemies and queues up the next event
+Watchout.prototype.draw = function() {
+  var realTime = systemToGameTime(Date.now());
+  var wait = gameToSystemTime(e.time - realTime);
+  this.last_wait = wait; // Allow the FPS counter to report the last wait time
+
+  this.fpsCounter.tick(); 
+
+  //draw the enemies
+
+  d3.select('svg').selectAll('.enemy')
+  .data(this.circles)
+  .attr('x',function(d){return d.x;})
+  .attr('y',function(d){return d.y;});
+
+  this.pq.enqueue(new Event(this.currentTime + frameInterval, null, null));
+  setTimeout(this.loop.bind(this), wait);
+};
+
+//function that continually loops updates the screen by calling other functions
+Watchout.prototype.loop = function() {
+  while (true) {
+
+    //calculate and update the current score
+    
+    this.gameStats.score = Math.floor((this.currentTime - this.startTime) * 10);
+
+    d3.select('.current').select('span').text(this.gameStats.score);
+
+
+    //test enemy collision with player
+
+    var players = this.players; 
+
+    var checkCollision = function(enemy, collidedCallback, context) {
+      var player;
+
+      for(var i = 0; i < players.length; i++) {
+        player = players[i];
+
+        var radiusSum = 1.4 * (enemy.radius + player.r);
+        var xDiff = enemy.x - player.x;
+        var yDiff = enemy.y - player.y;
+
+        var separation = Math.sqrt( Math.pow(xDiff, 2) + Math.pow(yDiff, 2) );
+        if(separation < radiusSum) // if touching
+          collidedCallback(context);
+      }
+    };
+
+    var onCollision = function(context) {
+      //console.log("collision!");
+      updateScore(context);
+      incrementCollisionsThrottled(context);
+    };
+
+    for(var i = 0; i < this.circles.length; i++) {
+      checkCollision(this.circles[i], onCollision, this);
     }
-    //reset current score to 0
-    gameStats.score = 0;
 
-  createEnemies(gameOptions.nEnemies);
 
+    //predict incoming collisions for enemies with walls and other enemies and move enemies appropriately
+
+    e = this.pq.dequeue();
+    if (!e.isValid())
+      continue;
+
+    var a = e.circleA;
+    var b = e.circleB;
+
+    for(var i = 0, length = this.circles.length; i < length; i++) {
+      this.circles[i].move(e.time - this.currentTime, this.canvas.width, this.canvas.height);
+    }
+    this.currentTime = e.time;
+
+    if(a && b) a.bounceOff(b);
+    else if(a && !b) a.bounceOffVerticalWall();
+    else if(!a && b) b.bounceOffHorizontalWall();
+    else {
+      this.draw();
+      return;
+    }
+
+    this.predict(a);
+    this.predict(b);
+
+  }
 };
-
-var currentTimer = function(){
-      gameStats.score++;
-      d3.select('.current').select('span').text(gameStats.score);
-      d3.select('.high').select('span').text(gameStats.bestScore);
-};
-
-//call the functions
-
-createPlayer(); //create the players
-startGame(); //start the game
-
-setInterval(currentTimer,1000); //continually updates the score
-d3.timer(moveEnemies(), interval); //continually updates the enemy position
-
