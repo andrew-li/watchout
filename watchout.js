@@ -140,8 +140,8 @@ Watchout.prototype.draw = function() {
 
   d3.select('svg').selectAll('.enemy')
   .data(this.circles)
-  .attr('x',function(d){return d.x;})
-  .attr('y',function(d){return d.y;});
+  .attr('x',function(d){return d.x - 20.0;})
+  .attr('y',function(d){return d.y - 20.0;});
 
   this.pq.enqueue(new Event(this.currentTime + frameInterval, null, null));
   setTimeout(this.loop.bind(this), wait);
@@ -168,13 +168,14 @@ Watchout.prototype.loop = function() {
       for(var i = 0; i < players.length; i++) {
         player = players[i];
 
-        var radiusSum = 1.4 * (enemy.radius + player.r);
+        var radiusSum = 1.2 * (enemy.radius + player.r);
         var xDiff = enemy.x - player.x;
         var yDiff = enemy.y - player.y;
 
         var separation = Math.sqrt( Math.pow(xDiff, 2) + Math.pow(yDiff, 2) );
-        if(separation < radiusSum) // if touching
+        if(separation < radiusSum) { // if touching
           collidedCallback(context);
+        }
       }
     };
 
