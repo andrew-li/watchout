@@ -5,7 +5,7 @@ This is a project I completed as a student at [hackreactor](http://hackreactor.c
 The source code in this repository was written as part of a sprint at Hack Reactor. The code is a reimplementation of the game from this link: http://latentflip.com/LearningD3/collider/. The basic requirement to implement the game was finished as a pair. However, I implemented the extra credit particle system on my own after the sprint was over.
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================================================================================================================================================================
 
 
 The code uses D3 and SVG to render the game assets. Although D3 might not necessarily be the ideal choice for a game, the game was created as a "fun" exercise to learn the framework.
