@@ -19,3 +19,8 @@ The Watchout game integrates code based on the event driven simulation code from
 The integrated code helps set up the particle system and can be found in the "lib" folder. The code was refactored to use a more psuedoclassical Javascript style, and the classes from the integrated code were extended to create new Enemy and Watchout classes.
 
 The Watchout class inherits from the CoolCollisionSystem class and overrides the start, loadResources, draw, and loop functions. The Watchout class uses D3 and SVG instead of canvas and native Javascript to manipulate the screen.
+
+
+DEMO: [watchout](http://andrew-li.github.io/watchout/index.html)
+Note: Have only tested this in Chrome. May not work correctly in other browsers.
+
